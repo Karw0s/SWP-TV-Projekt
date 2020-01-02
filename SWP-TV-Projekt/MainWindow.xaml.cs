@@ -1,5 +1,10 @@
-﻿using System;
+﻿using Microsoft.Speech.Recognition;
+using Microsoft.Speech.Recognition.SrgsGrammar;
+using Microsoft.Speech.Synthesis;
+using System;
+using System.ComponentModel;
 using System.Data.Entity;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -12,14 +17,92 @@ namespace SWP_TV_Projekt
     /// </summary>
     public partial class MainWindow : Window
     {
+
+        private readonly BackgroundWorker worker;
+        static SpeechSynthesizer ss;
+        static SpeechRecognitionEngine sre;
+        public bool SpeechOn { get; set; } = true;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            worker = new BackgroundWorker();
+            worker.DoWork += DoWork;
+            worker.RunWorkerAsync();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             InitTvContent();
+        }
+
+        private void SetUpSpeach()
+        {
+            CultureInfo ci = new CultureInfo("pl-PL");
+            ss = new SpeechSynthesizer();
+            sre = new SpeechRecognitionEngine(ci);
+
+            ss.SetOutputToDefaultAudioDevice();
+            sre.SetInputToDefaultAudioDevice();
+
+            //Srh = new SpeechRecognitionHelper(ss, this);
+
+            sre.SpeechRecognized += Sre_SpeechRecognized;
+            Grammar grammar = new Grammar(".\\Grammars\\TV-Grammar.xml", "rootRule");
+            grammar.Enabled = true;
+
+            sre.LoadGrammar(grammar);
+            sre.RecognizeAsync(RecognizeMode.Multiple);
+
+        }
+
+        private void Sre_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
+        {
+            string txt = e.Result.Text;
+            float confidence = e.Result.Confidence;
+            if (confidence >= 0.7)
+            {
+                var containsVolume = e.Result.Semantics.ContainsKey("volume");
+                int program;
+                int volume;
+
+                if (containsVolume)
+                {
+                    program = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
+                    volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
+                }
+                else
+                {
+                    program = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
+                    using (var context = new SwpEntities())
+                        volume = context.Settings.First().Volume;
+                }
+
+                // TODO remove when more programms added
+                if (program > 4)
+                {
+                    program = program % 4;
+                }
+
+                SetUI(() => {
+                    ChangeProgram(program);
+                    ChangeVolume(volume);
+                });
+                
+
+            }
+            else
+            {
+                ss.Speak("Proszę powtórzyć");
+            }
+        }
+
+        private void DoWork(object sender, DoWorkEventArgs e)
+        {
+            SetUpSpeach();
+            ss.Speak("Włączam Telewizor.");
+            while (SpeechOn) {; }
         }
 
         private async void InitTvContent()
@@ -97,6 +180,10 @@ namespace SWP_TV_Projekt
                 var nextChannel = 1 + currentChannel.Id % 4;
                 ChangeProgram(nextChannel);
             }
+        }
+        public static void SetUI(Action action)
+        {
+            Application.Current.Dispatcher.Invoke(action);
         }
     }
 }

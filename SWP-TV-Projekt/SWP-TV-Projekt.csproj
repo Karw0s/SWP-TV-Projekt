@@ -198,10 +198,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Grammars\SampleGrammar.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include=".gitignore" />
+    <Content Include="Grammars\TV-Grammar.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Model1.Context.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <DependentUpon>Model1.edmx</DependentUpon>
