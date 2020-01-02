@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# CA2000: Likwiduj obiekty przed utratą zakresu
+dotnet_diagnostic.CA2000.severity = suggestion
