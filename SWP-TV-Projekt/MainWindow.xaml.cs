@@ -144,6 +144,7 @@ namespace SWP_TV_Projekt
 
         private void SetVolumeDetails(int volume)
         {
+            VolLabel.Content = volume;
         }
 
         private void ChangeProgram(int channelId)
