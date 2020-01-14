@@ -1,0 +1,107 @@
+﻿<grammar version="1.0" xml:lang="pl-PL" root="rootRule"
+ xmlns="http://www.w3.org/2001/06/grammar" tag-format="semantics/1.0">
+  <rule id="rootRule">
+    <item> Zmień </item>
+    <item repeat="0-1"> program </item>
+    <item> na </item>
+    <ruleref uri="#program" />
+    <tag> out.programNumber=rules.latest(); </tag>
+    <item repeat="0-1"> program </item>
+    <item repeat="0-1">
+      <item> głośność </item>
+      <ruleref uri="#volume" />
+      <tag> out.volume=rules.latest(); </tag>
+    </item>
+  </rule>
+
+  <rule id="program">
+    <one-of>
+      <item>
+        pierwszy <tag> out="1";</tag>
+      </item>
+      <item>
+        jedynkę <tag> out="1";</tag>
+      </item>
+      <item>
+        jeden <tag> out="1";</tag>
+      </item>
+      <item>
+        drugi <tag> out="2"; </tag>
+      </item>
+      <item>
+        dwójkę <tag> out="2"; </tag>
+      </item>
+      <item>
+        dwa <tag> out="2"; </tag>
+      </item>
+      <item>
+        trzeci <tag> out="3"; </tag>
+      </item>
+      <item>
+        trójkę <tag> out="3"; </tag>
+      </item>
+      <item>
+        trzy <tag> out="3"; </tag>
+      </item>
+      <item>
+        czwarty <tag> out="4"; </tag>
+      </item>
+      <item>
+        czwórkę <tag> out="4"; </tag>
+      </item>
+      <item>
+        cztery <tag> out="4"; </tag>
+      </item>
+      <item>
+        piąty <tag> out="5"; </tag>
+      </item>
+      <item>
+        piątkę <tag> out="5"; </tag>
+      </item>
+      <item>
+        pięć <tag> out="5"; </tag>
+      </item>
+    </one-of>
+  </rule>
+  <rule id="volume">
+    <one-of>
+      <item>
+        wycisz <tag> out="0";</tag>
+      </item>
+      <item>
+        zero <tag> out="0";</tag>
+      </item>
+      <item>
+        jeden <tag> out="1";</tag>
+      </item>
+      <item>
+        dwa <tag> out="2"; </tag>
+      </item>
+      <item>
+        trzy <tag> out="3"; </tag>
+      </item>
+      <item>
+        cztery <tag> out="4"; </tag>
+      </item>
+      <item>
+        pięć <tag> out="5";</tag>
+      </item>
+      <item>
+        sześć <tag> out="6"; </tag>
+      </item>
+      <item>
+        siedem <tag> out="7"; </tag>
+      </item>
+      <item>
+        osiem <tag> out="8"; </tag>
+      </item>
+      <item>
+        dziewięć <tag> out="9"; </tag>
+      </item>
+      <item>
+        dziesięć <tag> out="10"; </tag>
+      </item>
+    </one-of>
+  </rule>
+ 
+</grammar>
