@@ -199,6 +199,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
+    <Content Include="Grammars\TV-VolumeLevelGrammar.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Grammars\TV-VolumeDecisionGrammar.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Grammars\TV-Grammar.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

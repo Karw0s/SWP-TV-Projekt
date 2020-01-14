@@ -98,6 +98,6 @@
                 SmallChange="0.02" IsEnabled="False" IsManipulationEnabled="True" Margin="25,0,25,10"
                 VerticalAlignment="Bottom" />
         <Image x:Name="SpeakerImage" HorizontalAlignment="Left" Height="50" Margin="25,20,0,0" VerticalAlignment="Top" Width="50" Source="Resources/Speaker_Icon.png"/>
-        <Label x:Name="VolLabel" Content="5" Margin="80,16,662,0" VerticalAlignment="Top" FontSize="40" FontFamily="Calibri" Height="54" FontWeight="Bold"/>
+        <Label x:Name="VolLabel" Content="5" Margin="80,16,623,0" VerticalAlignment="Top" FontSize="40" FontFamily="Calibri" Height="54" FontWeight="Bold"/>
     </Grid>
 </Window>

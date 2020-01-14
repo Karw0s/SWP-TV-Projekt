@@ -2,6 +2,7 @@
 using Microsoft.Speech.Recognition.SrgsGrammar;
 using Microsoft.Speech.Synthesis;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Globalization;
@@ -21,6 +22,12 @@ namespace SWP_TV_Projekt
         private readonly BackgroundWorker worker;
         static SpeechSynthesizer ss;
         static SpeechRecognitionEngine sre;
+        private Grammar mainGrammar;
+        private Grammar yesNoGrammar;
+        private Grammar volumeGrammar;
+        private int programToChange;
+
+        public IDictionary<string, Grammar> Grammars = new Dictionary<string, Grammar>();
         public bool SpeechOn { get; set; } = true;
 
         public MainWindow()
@@ -49,10 +56,21 @@ namespace SWP_TV_Projekt
             //Srh = new SpeechRecognitionHelper(ss, this);
 
             sre.SpeechRecognized += Sre_SpeechRecognized;
-            Grammar grammar = new Grammar(".\\Grammars\\TV-Grammar.xml", "rootRule");
-            grammar.Enabled = true;
+            
+            mainGrammar = new Grammar(".\\Grammars\\TV-Grammar.xml", "rootRule");
+            mainGrammar.Enabled = true;
+            Grammars.Add("main", mainGrammar);
+            yesNoGrammar = new Grammar(".\\Grammars\\TV-VolumeDecisionGrammar.xml", "rootRule");
+            yesNoGrammar.Enabled = false;
+            Grammars.Add("volumeDecision", yesNoGrammar);
+            volumeGrammar = new Grammar(".\\Grammars\\TV-VolumeLevelGrammar.xml", "rootRule");
+            volumeGrammar.Enabled = false;
+            Grammars.Add("volumeLevel", volumeGrammar);
 
-            sre.LoadGrammar(grammar);
+
+            sre.LoadGrammar(mainGrammar);
+            sre.LoadGrammar(yesNoGrammar);
+            sre.LoadGrammar(volumeGrammar);
             sre.RecognizeAsync(RecognizeMode.Multiple);
 
         }
@@ -63,39 +81,102 @@ namespace SWP_TV_Projekt
             float confidence = e.Result.Confidence;
             if (confidence >= 0.7)
             {
+                
                 var containsVolume = e.Result.Semantics.ContainsKey("volume");
+                
                 int program;
                 int volume;
 
-                if (containsVolume)
+                using (var context = new SwpEntities())
+                    program = context.Settings.First().TvChannelId;
+
+                if (e.Result.Grammar.Equals(mainGrammar))
                 {
-                    program = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
+                    if (containsVolume)
+                    {
+                        program = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
+                        volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
+
+                        setProgramVolume(program, volume);
+                    }
+                    else
+                    {
+                        ss.Speak("Czy chcesz zmienić głośność?");
+
+                        changeActiveGrammar("volumeDecision");
+
+                        programToChange = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
+                    }
+                }
+                else if (e.Result.Grammar.Equals(yesNoGrammar))
+                {
+                    if (e.Result.Semantics["decision"].Value.Equals("1"))
+                    {
+                        if (containsVolume)
+                        {
+                            volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
+                            program = programToChange;
+
+                            setProgramVolume(program, volume);
+
+                            changeActiveGrammar("main");
+                        }
+                        else
+                        {
+                            ss.Speak("Podaj poziom glośności");
+                            changeActiveGrammar("volumeLevel");
+                        }
+                    }
+                    else
+                    {
+                        program = programToChange;
+                        using (var context = new SwpEntities())
+                            volume = context.Settings.First().Volume;
+
+                        changeActiveGrammar("main");
+
+                        setProgramVolume(program, volume);
+                    }
+                }
+                else if (e.Result.Grammar.Equals(volumeGrammar))
+                {
                     volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
-                }
-                else
-                {
-                    program = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
-                    using (var context = new SwpEntities())
-                        volume = context.Settings.First().Volume;
-                }
+                    program = programToChange;
 
-                // TODO remove when more programms added
-                if (program > 4)
-                {
-                    program = program % 4;
-                }
+                    setProgramVolume(program, volume);
 
-                SetUI(() => {
-                    ChangeProgram(program);
-                    ChangeVolume(volume);
-                });
-                
+                    changeActiveGrammar("main");
+                }
 
             }
             else
             {
                 ss.Speak("Proszę powtórzyć");
             }
+        }
+
+        private void changeActiveGrammar(string active)
+        {
+            foreach (var grammar in Grammars.Values)
+            {
+                grammar.Enabled = false;
+            }
+
+            Grammars[active].Enabled = true;
+        }
+
+        private void setProgramVolume(int p, int v)
+        {
+            // TODO remove when more programms added
+            if (p > 4)
+            {
+                p = p % 4;
+            }
+
+            SetUI(() => {
+                ChangeProgram(p);
+                ChangeVolume(v);
+            });
         }
 
         private void DoWork(object sender, DoWorkEventArgs e)
