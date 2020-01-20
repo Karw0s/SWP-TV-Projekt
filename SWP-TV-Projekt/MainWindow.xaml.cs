@@ -8,7 +8,9 @@ using System.Data.Entity;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace SWP_TV_Projekt
@@ -25,7 +27,9 @@ namespace SWP_TV_Projekt
         private Grammar mainGrammar;
         private Grammar yesNoGrammar;
         private Grammar volumeGrammar;
+        private Grammar changeVolumeGrammar;
         private int programToChange;
+        private Storyboard disappearingStoryboard;
 
         public IDictionary<string, Grammar> Grammars = new Dictionary<string, Grammar>();
         public bool SpeechOn { get; set; } = true;
@@ -37,11 +41,25 @@ namespace SWP_TV_Projekt
             worker = new BackgroundWorker();
             worker.DoWork += DoWork;
             worker.RunWorkerAsync();
+
+            DoubleAnimation disappearingAnimation = new DoubleAnimation();
+            disappearingAnimation.From = 1.0;
+            disappearingAnimation.To = 0.0;
+            disappearingAnimation.Duration = new Duration(TimeSpan.FromSeconds(10));
+            disappearingAnimation.DecelerationRatio = 0.6;
+            disappearingAnimation.AccelerationRatio = 0.4;
+
+            disappearingStoryboard = new Storyboard();
+            disappearingStoryboard.Children.Add(disappearingAnimation);
+            Storyboard.SetTargetName(disappearingAnimation, Volume.Name);
+            Storyboard.SetTargetProperty(disappearingAnimation, new PropertyPath(UniformGrid.OpacityProperty));
+
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             InitTvContent();
+
         }
 
         private void SetUpSpeach()
@@ -63,14 +81,18 @@ namespace SWP_TV_Projekt
             yesNoGrammar = new Grammar(".\\Grammars\\TV-VolumeDecisionGrammar.xml", "rootRule");
             yesNoGrammar.Enabled = false;
             Grammars.Add("volumeDecision", yesNoGrammar);
+
+            changeVolumeGrammar = new Grammar(".\\Grammars\\TV-ChangeVolumeGrammar.xml", "rootRule");
+            changeVolumeGrammar.Enabled = true;
+            Grammars.Add("changeVolume", changeVolumeGrammar);
             volumeGrammar = new Grammar(".\\Grammars\\TV-VolumeLevelGrammar.xml", "rootRule");
             volumeGrammar.Enabled = false;
             Grammars.Add("volumeLevel", volumeGrammar);
 
-
             sre.LoadGrammar(mainGrammar);
             sre.LoadGrammar(yesNoGrammar);
             sre.LoadGrammar(volumeGrammar);
+            sre.LoadGrammar(changeVolumeGrammar);
             sre.RecognizeAsync(RecognizeMode.Multiple);
 
         }
@@ -97,16 +119,21 @@ namespace SWP_TV_Projekt
                         program = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
                         volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
 
-                        setProgramVolume(program, volume);
+                        SetProgramVolume(program, volume);
                     }
                     else
                     {
                         ss.Speak("Czy chcesz zmienić głośność?");
 
-                        changeActiveGrammar("volumeDecision");
+                        ChangeActiveGrammar("volumeDecision");
 
                         programToChange = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
                     }
+                }
+                else if (e.Result.Grammar.Equals(changeVolumeGrammar))
+                {
+                    volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
+                    SetProgramVolume(program, volume);
                 }
                 else if (e.Result.Grammar.Equals(yesNoGrammar))
                 {
@@ -117,14 +144,14 @@ namespace SWP_TV_Projekt
                             volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
                             program = programToChange;
 
-                            setProgramVolume(program, volume);
+                            SetProgramVolume(program, volume);
 
-                            changeActiveGrammar("main");
+                            ResetActiveGrammars();
                         }
                         else
                         {
                             ss.Speak("Podaj poziom glośności");
-                            changeActiveGrammar("volumeLevel");
+                            ChangeActiveGrammar("volumeLevel");
                         }
                     }
                     else
@@ -133,9 +160,9 @@ namespace SWP_TV_Projekt
                         using (var context = new SwpEntities())
                             volume = context.Settings.First().Volume;
 
-                        changeActiveGrammar("main");
+                        ResetActiveGrammars();
 
-                        setProgramVolume(program, volume);
+                        SetProgramVolume(program, volume);
                     }
                 }
                 else if (e.Result.Grammar.Equals(volumeGrammar))
@@ -143,9 +170,9 @@ namespace SWP_TV_Projekt
                     volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
                     program = programToChange;
 
-                    setProgramVolume(program, volume);
+                    SetProgramVolume(program, volume);
 
-                    changeActiveGrammar("main");
+                    ResetActiveGrammars();
                 }
 
             }
@@ -155,7 +182,7 @@ namespace SWP_TV_Projekt
             }
         }
 
-        private void changeActiveGrammar(string active)
+        private void ChangeActiveGrammar(string active)
         {
             foreach (var grammar in Grammars.Values)
             {
@@ -165,7 +192,18 @@ namespace SWP_TV_Projekt
             Grammars[active].Enabled = true;
         }
 
-        private void setProgramVolume(int p, int v)
+        private void ResetActiveGrammars()
+        {
+            foreach (var grammar in Grammars.Values)
+            {
+                grammar.Enabled = false;
+            }
+
+            Grammars["main"].Enabled = true;
+            Grammars["changeVolume"].Enabled = true;
+        }
+
+        private void SetProgramVolume(int p, int v)
         {
             // TODO remove when more programms added
             if (p > 4)
@@ -176,6 +214,7 @@ namespace SWP_TV_Projekt
             SetUI(() => {
                 ChangeProgram(p);
                 ChangeVolume(v);
+                disappearingStoryboard.Begin(this);
             });
         }
 
@@ -200,6 +239,8 @@ namespace SWP_TV_Projekt
             SetChannelDetails(currentChannel);
             SetProgramDetails(currentChannel);
             SetVolumeDetails(currentSettings.Volume);
+
+            disappearingStoryboard.Begin(this);
         }
 
         private void SetChannelDetails(TvChannel currentChannel)
