@@ -1,5 +1,4 @@
 ﻿using Microsoft.Speech.Recognition;
-using Microsoft.Speech.Recognition.SrgsGrammar;
 using Microsoft.Speech.Synthesis;
 using System;
 using System.Collections.Generic;
@@ -28,6 +27,7 @@ namespace SWP_TV_Projekt
         private Grammar yesNoGrammar;
         private Grammar volumeGrammar;
         private Grammar changeVolumeGrammar;
+        private Grammar simpleGrammar;
         private int programToChange;
         private Storyboard disappearingStoryboard;
 
@@ -89,10 +89,15 @@ namespace SWP_TV_Projekt
             volumeGrammar.Enabled = false;
             Grammars.Add("volumeLevel", volumeGrammar);
 
+            simpleGrammar = new Grammar(".\\Grammars\\TV-SimpleGrammar.xml", "rootRule");
+            simpleGrammar.Enabled = true;
+            Grammars.Add("simpleGrammar", simpleGrammar);
+
             sre.LoadGrammar(mainGrammar);
             sre.LoadGrammar(yesNoGrammar);
             sre.LoadGrammar(volumeGrammar);
             sre.LoadGrammar(changeVolumeGrammar);
+            sre.LoadGrammar(simpleGrammar);
             sre.RecognizeAsync(RecognizeMode.Multiple);
 
         }
@@ -103,9 +108,7 @@ namespace SWP_TV_Projekt
             float confidence = e.Result.Confidence;
             if (confidence >= 0.7)
             {
-                
                 var containsVolume = e.Result.Semantics.ContainsKey("volume");
-                
                 int program;
                 int volume;
 
@@ -145,7 +148,6 @@ namespace SWP_TV_Projekt
                             program = programToChange;
 
                             SetProgramVolume(program, volume);
-
                             ResetActiveGrammars();
                         }
                         else
@@ -161,7 +163,6 @@ namespace SWP_TV_Projekt
                             volume = context.Settings.First().Volume;
 
                         ResetActiveGrammars();
-
                         SetProgramVolume(program, volume);
                     }
                 }
@@ -171,10 +172,31 @@ namespace SWP_TV_Projekt
                     program = programToChange;
 
                     SetProgramVolume(program, volume);
-
                     ResetActiveGrammars();
                 }
+                else if (e.Result.Grammar.Equals(simpleGrammar))
+                {
+                    using (var context = new SwpEntities())
+                        volume = context.Settings.First().Volume;
 
+                    if (containsVolume)
+                    {
+                        int v = Convert.ToInt32(e.Result.Semantics["volume"].Value);
+
+                        if (v == 0)
+                            volume = 0;
+                        else
+                            volume += v;
+                        
+                    }
+                    if (e.Result.Semantics.ContainsKey("program"))
+                    {
+                        int p = Convert.ToInt32(e.Result.Semantics["program"].Value);
+                        program = program + p;
+                    }
+                    
+                    SetProgramVolume(program, volume);
+                }
             }
             else
             {
@@ -201,6 +223,7 @@ namespace SWP_TV_Projekt
 
             Grammars["main"].Enabled = true;
             Grammars["changeVolume"].Enabled = true;
+            Grammars["simpleGrammar"].Enabled = true;
         }
 
         private void SetProgramVolume(int p, int v)
@@ -210,11 +233,21 @@ namespace SWP_TV_Projekt
             {
                 p = p % 4;
             }
+            if (p < 1)
+            {
+                p = 4;
+            }
+
+            if (v > 10)
+                v = 10;
+            else if (v < 0)
+                v = 0;
 
             SetUI(() => {
                 ChangeProgram(p);
                 ChangeVolume(v);
-                disappearingStoryboard.Begin(this);
+                disappearingStoryboard.Stop(this);
+                disappearingStoryboard.Begin(this, true);
             });
         }
 

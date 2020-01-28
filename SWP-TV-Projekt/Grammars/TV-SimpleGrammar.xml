@@ -1,0 +1,59 @@
+﻿<grammar version="1.0" xml:lang="pl-PL" root="rootRule"
+ xmlns="http://www.w3.org/2001/06/grammar" tag-format="semantics/1.0">
+  <rule id="rootRule">
+    <one-of>
+      <item>
+        <ruleref uri="#program" />
+        <tag> out.program=rules.latest(); </tag>
+      </item>
+      <item>
+        <ruleref uri="#volume" />
+        <tag> out.volume=rules.latest(); </tag>
+      </item>
+    </one-of>
+  </rule>
+
+  <rule id="program">
+    <one-of>
+      <item>
+          <item>następny</item>
+          <item repeat="0-1"> program</item>
+        <tag> out="1";</tag>
+      </item>
+      <item>
+        <item>kolejny program</item>
+        <tag> out="1";</tag>
+      </item>
+      <item>
+          <item>poprzedni</item>
+          <item repeat="0-1">program</item>
+        <tag> out="-1";</tag>
+      </item>
+      <item>
+        <item>cofnij</item>
+        <item repeat="0-1">program</item>
+        <tag> out="-1";</tag>
+      </item>
+    </one-of>
+  </rule>
+  <rule id="volume">
+    <one-of>
+      <item>
+        wycisz <tag> out="0";</tag>
+      </item>
+      <item>
+        głośniej <tag> out="1";</tag>
+      </item>
+      <item>
+        podgłośnij <tag> out="1";</tag>
+      </item>
+      <item>
+        ciszej <tag> out="-1";</tag>
+      </item>
+      <item>
+        przycisz <tag> out="-1";</tag>
+      </item>
+    </one-of>
+  </rule>
+
+</grammar>
