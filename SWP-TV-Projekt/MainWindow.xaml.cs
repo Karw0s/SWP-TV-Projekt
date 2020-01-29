@@ -1,17 +1,15 @@
-﻿using Microsoft.Speech.Recognition;
-using Microsoft.Speech.Recognition.SrgsGrammar;
-using Microsoft.Speech.Synthesis;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Entity;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using Microsoft.Speech.Recognition;
+using Microsoft.Speech.Synthesis;
 
 namespace SWP_TV_Projekt
 {
@@ -20,19 +18,15 @@ namespace SWP_TV_Projekt
     /// </summary>
     public partial class MainWindow : Window
     {
-
+        private static SpeechSynthesizer speechSynthesizer;
+        private static SpeechRecognitionEngine sre;
+        private readonly IDictionary<string, Grammar> Grammars = new Dictionary<string, Grammar>();
         private readonly BackgroundWorker worker;
-        static SpeechSynthesizer ss;
-        static SpeechRecognitionEngine sre;
-        private Grammar mainGrammar;
-        private Grammar yesNoGrammar;
-        private Grammar volumeGrammar;
         private Grammar changeVolumeGrammar;
-        private int programToChange;
         private Storyboard disappearingStoryboard;
-
-        public IDictionary<string, Grammar> Grammars = new Dictionary<string, Grammar>();
-        public bool SpeechOn { get; set; } = true;
+        private Grammar mainGrammar;
+        private Grammar volumeGrammar;
+        private Grammar yesNoGrammar;
 
         public MainWindow()
         {
@@ -42,196 +36,184 @@ namespace SWP_TV_Projekt
             worker.DoWork += DoWork;
             worker.RunWorkerAsync();
 
-            DoubleAnimation disappearingAnimation = new DoubleAnimation();
-            disappearingAnimation.From = 1.0;
-            disappearingAnimation.To = 0.0;
-            disappearingAnimation.Duration = new Duration(TimeSpan.FromSeconds(10));
-            disappearingAnimation.DecelerationRatio = 0.6;
-            disappearingAnimation.AccelerationRatio = 0.4;
+            InitDisappearingAnimation();
+        }
+
+        public bool SpeechOn { get; set; } = true;
+
+        private void InitDisappearingAnimation()
+        {
+            var disappearingAnimation = new DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.0,
+                Duration = new Duration(TimeSpan.FromSeconds(10)),
+                DecelerationRatio = 0.6,
+                AccelerationRatio = 0.4
+            };
 
             disappearingStoryboard = new Storyboard();
             disappearingStoryboard.Children.Add(disappearingAnimation);
             Storyboard.SetTargetName(disappearingAnimation, Volume.Name);
-            Storyboard.SetTargetProperty(disappearingAnimation, new PropertyPath(UniformGrid.OpacityProperty));
-
+            Storyboard.SetTargetProperty(disappearingAnimation, new PropertyPath(OpacityProperty));
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             InitTvContent();
-
         }
 
-        private void SetUpSpeach()
+        private void SetUpSpeech()
         {
-            CultureInfo ci = new CultureInfo("pl-PL");
-            ss = new SpeechSynthesizer();
+            var ci = new CultureInfo("pl-PL");
+            speechSynthesizer = new SpeechSynthesizer();
             sre = new SpeechRecognitionEngine(ci);
 
-            ss.SetOutputToDefaultAudioDevice();
+            speechSynthesizer.SetOutputToDefaultAudioDevice();
             sre.SetInputToDefaultAudioDevice();
 
-            //Srh = new SpeechRecognitionHelper(ss, this);
-
             sre.SpeechRecognized += Sre_SpeechRecognized;
-            
-            mainGrammar = new Grammar(".\\Grammars\\TV-Grammar.xml", "rootRule");
-            mainGrammar.Enabled = true;
+
+            mainGrammar = new Grammar(".\\Grammars\\TV-Grammar.xml", "rootRule") {Enabled = true};
             Grammars.Add("main", mainGrammar);
-            yesNoGrammar = new Grammar(".\\Grammars\\TV-VolumeDecisionGrammar.xml", "rootRule");
-            yesNoGrammar.Enabled = false;
+
+            yesNoGrammar = new Grammar(".\\Grammars\\TV-VolumeDecisionGrammar.xml", "rootRule") {Enabled = false};
             Grammars.Add("volumeDecision", yesNoGrammar);
 
-            changeVolumeGrammar = new Grammar(".\\Grammars\\TV-ChangeVolumeGrammar.xml", "rootRule");
-            changeVolumeGrammar.Enabled = true;
+            changeVolumeGrammar = new Grammar(".\\Grammars\\TV-ChangeVolumeGrammar.xml", "rootRule") {Enabled = true};
             Grammars.Add("changeVolume", changeVolumeGrammar);
-            volumeGrammar = new Grammar(".\\Grammars\\TV-VolumeLevelGrammar.xml", "rootRule");
-            volumeGrammar.Enabled = false;
+
+            volumeGrammar = new Grammar(".\\Grammars\\TV-VolumeLevelGrammar.xml", "rootRule") {Enabled = false};
             Grammars.Add("volumeLevel", volumeGrammar);
 
             sre.LoadGrammar(mainGrammar);
             sre.LoadGrammar(yesNoGrammar);
-            sre.LoadGrammar(volumeGrammar);
             sre.LoadGrammar(changeVolumeGrammar);
+            sre.LoadGrammar(volumeGrammar);
             sre.RecognizeAsync(RecognizeMode.Multiple);
-
         }
 
         private void Sre_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
         {
-            string txt = e.Result.Text;
-            float confidence = e.Result.Confidence;
-            if (confidence >= 0.7)
+            var txt = e.Result.Text;
+            var confidence = e.Result.Confidence;
+            if (confidence >= 0.5)
             {
-                
-                var containsVolume = e.Result.Semantics.ContainsKey("volume");
-                
-                int program;
-                int volume;
-
-                using (var context = new SwpEntities())
-                    program = context.Settings.First().TvChannelId;
-
                 if (e.Result.Grammar.Equals(mainGrammar))
-                {
-                    if (containsVolume)
-                    {
-                        program = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
-                        volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
-
-                        SetProgramVolume(program, volume);
-                    }
-                    else
-                    {
-                        ss.Speak("Czy chcesz zmienić głośność?");
-
-                        ChangeActiveGrammar("volumeDecision");
-
-                        programToChange = Convert.ToInt32(e.Result.Semantics["programNumber"].Value);
-                    }
-                }
+                    HandleMainGrammar(e.Result);
                 else if (e.Result.Grammar.Equals(changeVolumeGrammar))
-                {
-                    volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
-                    SetProgramVolume(program, volume);
-                }
+                    HandleChangeVolumeGrammar(e.Result);
                 else if (e.Result.Grammar.Equals(yesNoGrammar))
-                {
-                    if (e.Result.Semantics["decision"].Value.Equals("1"))
-                    {
-                        if (containsVolume)
-                        {
-                            volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
-                            program = programToChange;
-
-                            SetProgramVolume(program, volume);
-
-                            ResetActiveGrammars();
-                        }
-                        else
-                        {
-                            ss.Speak("Podaj poziom glośności");
-                            ChangeActiveGrammar("volumeLevel");
-                        }
-                    }
-                    else
-                    {
-                        program = programToChange;
-                        using (var context = new SwpEntities())
-                            volume = context.Settings.First().Volume;
-
-                        ResetActiveGrammars();
-
-                        SetProgramVolume(program, volume);
-                    }
-                }
-                else if (e.Result.Grammar.Equals(volumeGrammar))
-                {
-                    volume = Convert.ToInt32(e.Result.Semantics["volume"].Value);
-                    program = programToChange;
-
-                    SetProgramVolume(program, volume);
-
-                    ResetActiveGrammars();
-                }
-
+                    HandleYesNoGrammar(e.Result);
+                else if (e.Result.Grammar.Equals(volumeGrammar)) HandleVolumeGrammar(e.Result);
             }
             else
             {
-                ss.Speak("Proszę powtórzyć");
+                speechSynthesizer.Speak(VoiceCommand.TryAgain);
             }
+        }
+
+        private void HandleVolumeGrammar(RecognitionResult eResult)
+        {
+            var volume = Convert.ToInt32(eResult.Semantics[SemanticKey.Volume].Value);
+            ChangeVolume(volume);
+            ResetActiveGrammars();
+        }
+
+        private void HandleYesNoGrammar(RecognitionResult eResult)
+        {
+            if (eResult.Semantics[SemanticKey.Decision].Value.Equals("1"))
+            {
+                var containsVolume = eResult.Semantics.ContainsKey(SemanticKey.Volume);
+                if (containsVolume)
+                {
+                    var volume = Convert.ToInt32(eResult.Semantics[SemanticKey.Volume].Value);
+                    ChangeVolume(volume);
+                    ResetActiveGrammars();
+                }
+                else
+                {
+                    ChangeActiveGrammar("volumeLevel");
+                    speechSynthesizer.Speak(VoiceCommand.EnterVolumeLevel);
+                }
+            }
+            else
+            {
+                ResetActiveGrammars();
+            }
+        }
+
+        private void HandleChangeVolumeGrammar(RecognitionResult eResult)
+        {
+            var volume = Convert.ToInt32(eResult.Semantics[SemanticKey.Volume].Value);
+            ChangeVolume(volume);
+        }
+
+        private void HandleMainGrammar(RecognitionResult eResult)
+        {
+            var containsVolume = eResult.Semantics.ContainsKey(SemanticKey.Volume);
+            var containsProgram = eResult.Semantics.ContainsKey(SemanticKey.Channel);
+            var containsDetails = eResult.Semantics.ContainsKey(SemanticKey.Details);
+            var containsClose = eResult.Semantics.ContainsKey(SemanticKey.Close);
+            if (containsClose) CloseProgramDescriptionPanel();
+            if (containsDetails && !(containsProgram || containsVolume)) OpenProgramDescriptionPanel();
+            if (containsProgram && containsVolume)
+            {
+                var program = Convert.ToInt32(eResult.Semantics[SemanticKey.Channel].Value);
+                var volume = Convert.ToInt32(eResult.Semantics[SemanticKey.Volume].Value);
+                SetProgramVolume(program, volume);
+            }
+            else if (containsProgram)
+            {
+                var program = Convert.ToInt32(eResult.Semantics[SemanticKey.Channel].Value);
+                ChangeProgram(program);
+                ChangeActiveGrammar("volumeDecision");
+                speechSynthesizer.Speak(VoiceCommand.QuestionToChangingVolume);
+            }
+
+            if (containsDetails) OpenProgramDescriptionPanel();
         }
 
         private void ChangeActiveGrammar(string active)
         {
-            foreach (var grammar in Grammars.Values)
-            {
-                grammar.Enabled = false;
-            }
+            foreach (var grammar in Grammars.Values) grammar.Enabled = false;
 
             Grammars[active].Enabled = true;
         }
 
         private void ResetActiveGrammars()
         {
-            foreach (var grammar in Grammars.Values)
-            {
-                grammar.Enabled = false;
-            }
+            foreach (var grammar in Grammars.Values) grammar.Enabled = false;
 
             Grammars["main"].Enabled = true;
             Grammars["changeVolume"].Enabled = true;
         }
 
-        private void SetProgramVolume(int p, int v)
+        private void SetProgramVolume(int channelId, int volumeValue)
         {
-            // TODO remove when more programms added
-            if (p > 4)
-            {
-                p = p % 4;
-            }
+            // TODO remove when more programs added
+            if (channelId > 4) channelId %= 4;
 
-            SetUI(() => {
-                ChangeProgram(p);
-                ChangeVolume(v);
-                disappearingStoryboard.Begin(this);
+            SetUI(() =>
+            {
+                ChangeProgram(channelId);
+                ChangeVolume(volumeValue);
             });
         }
 
         private void DoWork(object sender, DoWorkEventArgs e)
         {
-            SetUpSpeach();
-            ss.Speak("Włączam Telewizor.");
-            while (SpeechOn) {; }
+            SetUpSpeech();
+            speechSynthesizer.Speak(VoiceCommand.TvTurnsOn);
+            while (SpeechOn) ;
         }
 
-        private async void InitTvContent()
+        private void InitTvContent()
         {
             TvChannel currentChannel;
             Setting currentSettings;
             using (var context = new SwpEntities())
             {
-                // currentSettings = await Task.Run(() => context.Settings.First()).ConfigureAwait(false);
                 currentSettings = context.Settings.FirstAsync().GetAwaiter().GetResult();
                 currentChannel = currentSettings.TvChannel;
             }
@@ -239,13 +221,11 @@ namespace SWP_TV_Projekt
             SetChannelDetails(currentChannel);
             SetProgramDetails(currentChannel);
             SetVolumeDetails(currentSettings.Volume);
-
-            disappearingStoryboard.Begin(this);
         }
 
         private void SetChannelDetails(TvChannel currentChannel)
         {
-            ChannelLogo.Source = new BitmapImage(new Uri(currentChannel.LogoUrl));
+            SetUI(() => { ChannelLogo.Source = new BitmapImage(new Uri(currentChannel.LogoUrl)); });
         }
 
         private void SetProgramDetails(TvChannel currentChannel)
@@ -257,16 +237,25 @@ namespace SWP_TV_Projekt
             var viewedTime = DateTimeOffset.Now - programEntry.Start;
             var viewedPercentage = viewedTime.TotalMilliseconds / durationTime.TotalMilliseconds;
 
-            ProgramTitle.Content = programEntry.Title;
-            if (programEntry.Photo != null) TvContentImage.Source = new BitmapImage(programEntry.Photo);
+            SetUI(() =>
+            {
+                ProgramTitle.Content = programEntry.Title;
+                if (programEntry.Photo != null) TvContentImage.Source = new BitmapImage(programEntry.Photo);
 
-            Duration.Content = durationTime.ToString();
-            ProgramProgress.Value = viewedPercentage;
+                Duration.Content = durationTime.ToString();
+                ProgramProgress.Value = viewedPercentage;
+                WindowContent.Title = currentChannel.Name;
+                ProgramDescription.Text = programEntry.Description;
+            });
         }
 
         private void SetVolumeDetails(int volume)
         {
-            VolLabel.Content = volume;
+            SetUI(() =>
+            {
+                VolLabel.Content = volume;
+                disappearingStoryboard.Begin(this);
+            });
         }
 
         private void ChangeProgram(int channelId)
@@ -277,6 +266,7 @@ namespace SWP_TV_Projekt
                 context.Settings.First().TvChannel = currentChannel;
                 context.SaveChanges();
 
+                CloseProgramDescriptionPanel();
                 SetChannelDetails(currentChannel);
                 SetProgramDetails(currentChannel);
             }
@@ -304,9 +294,34 @@ namespace SWP_TV_Projekt
                 ChangeProgram(nextChannel);
             }
         }
+
         public static void SetUI(Action action)
         {
-            Application.Current.Dispatcher.Invoke(action);
+            Application.Current.Dispatcher?.Invoke(action);
+        }
+
+        //TODO to remove
+        private void OpenProgramDescriptionPanel(object sender, MouseButtonEventArgs e)
+        {
+            OpenProgramDescriptionPanel();
+        }
+
+        private void OpenProgramDescriptionPanel()
+        {
+            SetUI(() => { ProgramDescriptionPanel.Visibility = Visibility.Visible; });
+            // speechSynthesizer.Speak(ProgramDescription.Text);
+        }
+
+        //TODO to remove
+        private void CloseProgramDescriptionPanel(object sender, MouseButtonEventArgs e)
+        {
+            CloseProgramDescriptionPanel();
+        }
+
+        private void CloseProgramDescriptionPanel()
+        {
+            SetUI(() => { ProgramDescriptionPanel.Visibility = Visibility.Collapsed; });
+            // speechSynthesizer.Pause();
         }
     }
 }

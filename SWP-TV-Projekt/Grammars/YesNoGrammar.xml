@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" root="rootRule"
+         xml:lang="pl-PL" xmlns="http://www.w3.org/2001/06/grammar"
+         mode="voice"
+         xsi:schemaLocation="http://www.w3.org/2001/06/grammar
+                        http://www.w3.org/TR/speech-grammar/grammar.xsd"
+         tag-format="semantics/1.0">
+
+    <rule id="rootRule">
+        <one-of>
+            <item>
+                <ruleref uri="#yes"/>
+                <tag>out="1";</tag>
+            </item>
+            <item>
+                <ruleref uri="#no"/>
+                <tag>out="0";</tag>
+            </item>
+        </one-of>
+    </rule>
+
+    <rule id="yes" scope="public">
+        <one-of>
+            <item>
+                tak
+            </item>
+            <item>
+                chcę
+            </item>
+            <item>
+                sprawdź
+            </item>
+            <item>
+                jasne
+            </item>
+            <item>
+                proszę
+            </item>
+            <item>
+                poproszę
+            </item>
+        </one-of>
+    </rule>
+
+    <rule id="no" scope="public">
+        <one-of>
+            <item>
+                nie
+            </item>
+            <item>
+                nie chcę
+            </item>
+            <item>
+                dziękuję
+            </item>
+            <item>
+                nie dziękuję
+            </item>
+        </one-of>
+    </rule>
+</grammar>

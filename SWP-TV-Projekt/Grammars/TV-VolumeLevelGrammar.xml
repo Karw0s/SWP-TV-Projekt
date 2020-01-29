@@ -6,16 +6,19 @@
     <tag> out.volume=rules.latest(); </tag>
   </rule>
 
-  <rule id="volume">
+  <rule id="volume" scope="public">
     <one-of>
       <item>
-        wróć <tag> out="-1";</tag>
+        wróć
+        <tag>out="-1";</tag>
       </item>
       <item>
-        wycisz <tag> out="0";</tag>
+        wycisz
+        <tag>out="0";</tag>
       </item>
       <item>
-        zero <tag> out="0";</tag>
+        zero
+        <tag>out="0";</tag>
       </item>
       <item>
         jeden <tag> out="1";</tag>

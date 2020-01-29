@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE grammar PUBLIC "-//W3C//DTD GRAMMAR 1.0//EN"
+        "http://www.w3.org/TR/speech-grammar/grammar.dtd">
+
+<grammar xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0"
+         xmlns="http://www.w3.org/2001/06/grammar"
+         xsi:schemaLocation="http://www.w3.org/2001/06/grammar 
+                             http://www.w3.org/TR/speech-grammar/grammar.xsd"
+         xml:lang="pl-PL" mode="voice" root="main">
+
+    <rule id="main" scope="public">
+        <ruleref uri="#digits1_9"/>
+    </rule>
+
+    <rule id="digits1_9" scope="public">
+        <example>trzy</example>
+        <one-of>
+            <item>zero</item>
+            <tag>out="0";</tag>
+            <item>jeden</item>
+            <tag>out="1";</tag>
+            <item>dwa</item>
+            <tag>out="2";</tag>
+            <item>trzy</item>
+            <tag>out="3";</tag>
+            <item>cztery</item>
+            <tag>out="4";</tag>
+            <item>pięć</item>
+            <tag>out="5";</tag>
+            <item>sześć</item>
+            <tag>out="6";</tag>
+            <item>siedem</item>
+            <tag>out="7";</tag>
+            <item>osiem</item>
+            <tag>out="8";</tag>
+            <item>dziewięć</item>
+            <tag>out="9";</tag>
+            <item>dziesięć</item>
+            <tag>out="10";</tag>
+        </one-of>
+    </rule>
+</grammar> 
