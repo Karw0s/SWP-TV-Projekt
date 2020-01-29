@@ -5,8 +5,10 @@
       <item repeat="0-1">
         <ruleref uri="#changeVolumeCommand"/>
       </item>
-      <item>dźwięk</item>
-      <item>głośność</item>
+      <one-of>
+        <item>dźwięk</item>
+        <item>głośność</item>
+      </one-of>
       <ruleref uri="TV-VolumeLevelGrammar.xml#volume"/>
       <tag>out.volume=rules.latest();</tag>
       <item repeat="0-1">poziom</item>

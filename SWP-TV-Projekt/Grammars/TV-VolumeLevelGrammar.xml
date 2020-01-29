@@ -9,10 +9,6 @@
   <rule id="volume" scope="public">
     <one-of>
       <item>
-        wróć
-        <tag>out="-1";</tag>
-      </item>
-      <item>
         wycisz
         <tag>out="0";</tag>
       </item>

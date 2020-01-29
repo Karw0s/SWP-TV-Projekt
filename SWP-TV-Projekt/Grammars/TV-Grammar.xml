@@ -19,8 +19,10 @@
             <item repeat="0-1">
                 <ruleref uri="TV-ChangeVolumeGrammar.xml#changeVolumeCommand"/>
             </item>
-            <item>dźwięk</item>
-            <item>głośność</item>
+            <one-of>
+                <item>dźwięk</item>
+                <item>głośność</item>
+            </one-of>
             <item repeat="0-1">na</item>
             <ruleref uri="TV-VolumeLevelGrammar.xml#volume"/>
             <tag>out.volume=rules.latest();</tag>
