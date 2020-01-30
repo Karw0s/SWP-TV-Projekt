@@ -25,9 +25,9 @@ namespace SWP_TV_Projekt
         private Grammar changeVolumeGrammar;
         private Storyboard disappearingStoryboard;
         private Grammar mainGrammar;
+        private Grammar simpleChangeGrammar;
         private Grammar volumeGrammar;
         private Grammar yesNoGrammar;
-        private Grammar simpleChangeGrammar;
 
         public MainWindow()
         {
@@ -87,7 +87,8 @@ namespace SWP_TV_Projekt
             volumeGrammar = new Grammar(".\\Grammars\\TV-VolumeLevelGrammar.xml", "rootRule") {Enabled = false};
             Grammars.Add("volumeLevel", volumeGrammar);
 
-            simpleChangeGrammar = new Grammar(".\\Grammars\\SimpleProgVolChangeGrammar.xml", "rootRule") {Enabled = true};
+            simpleChangeGrammar = new Grammar(".\\Grammars\\SimpleProgVolChangeGrammar.xml", "rootRule")
+                {Enabled = true};
             Grammars.Add("simpleChange", simpleChangeGrammar);
 
             sre.LoadGrammar(mainGrammar);
@@ -110,7 +111,7 @@ namespace SWP_TV_Projekt
                     HandleChangeVolumeGrammar(e.Result);
                 else if (e.Result.Grammar.Equals(yesNoGrammar))
                     HandleYesNoGrammar(e.Result);
-                else if (e.Result.Grammar.Equals(volumeGrammar)) 
+                else if (e.Result.Grammar.Equals(volumeGrammar))
                     HandleVolumeGrammar(e.Result);
                 else if (e.Result.Grammar.Equals(simpleChangeGrammar))
                     HandleSimpleChangeGrammar(e.Result);
@@ -127,14 +128,18 @@ namespace SWP_TV_Projekt
             int volume;
 
             using (var context = new SwpEntities())
+            {
                 volume = context.Settings.First().Volume;
+            }
 
             using (var context = new SwpEntities())
+            {
                 program = context.Settings.First().TvChannelId;
+            }
 
             if (eResult.Semantics.ContainsKey(SemanticKey.Volume))
             {
-                int v = Convert.ToInt32(eResult.Semantics["volume"].Value);
+                var v = Convert.ToInt32(eResult.Semantics["volume"].Value);
 
                 if (v == 0)
                     volume = 0;
@@ -143,9 +148,10 @@ namespace SWP_TV_Projekt
 
                 ChangeVolume(volume);
             }
+
             if (eResult.Semantics.ContainsKey("program"))
             {
-                int p = Convert.ToInt32(eResult.Semantics["program"].Value);
+                var p = Convert.ToInt32(eResult.Semantics["program"].Value);
                 program = program + p;
 
                 ChangeProgram(program);
@@ -231,7 +237,6 @@ namespace SWP_TV_Projekt
 
         private void SetProgramVolume(int channelId, int volumeValue)
         {
-
             SetUI(() =>
             {
                 ChangeProgram(channelId);
@@ -298,14 +303,31 @@ namespace SWP_TV_Projekt
 
         private void ChangeProgram(int channelId)
         {
-            // TODO remove when more programs added
-            if (channelId > 4) channelId %= 4;
+            switch (channelId)
+            {
+                case -1:
+                    SetToPrevChannel();
+                    break;
+                case 0:
+                    SetToNextChannel();
+                    break;
+                default:
+                    SetProgram(channelId);
+                    break;
+            }
+        }
 
-            if (channelId < 1) channelId = 4;
-
+        private void SetProgram(int channelId)
+        {
             using (var context = new SwpEntities())
             {
                 var currentChannel = context.TvChannels.Find(channelId);
+                if (currentChannel == null)
+                {
+                    speechSynthesizer.Speak(string.Format(VoiceCommand.ChannelNotFound, channelId));
+                    return;
+                }
+
                 context.Settings.First().TvChannel = currentChannel;
                 context.SaveChanges();
 
@@ -332,23 +354,37 @@ namespace SWP_TV_Projekt
         }
 
 
-        //TODO to remove
         private void SetToNextChannel(object sender, MouseEventArgs e)
+        {
+            SetToNextChannel();
+        }
+
+        private void SetToNextChannel()
+        {
+            ChangeProgramByPosition(1);
+        }
+
+        private void SetToPrevChannel()
+        {
+            ChangeProgramByPosition(-1);
+        }
+
+        private void ChangeProgramByPosition(int position)
         {
             using (var context = new SwpEntities())
             {
+                var channelCount = context.TvChannels.Count();
                 var currentChannel = context.Settings.First().TvChannel;
-                var nextChannel = 1 + currentChannel.Id % 4;
+                var nextChannel = position + currentChannel.Id % channelCount;
                 ChangeProgram(nextChannel);
             }
         }
 
-        public static void SetUI(Action action)
+        private static void SetUI(Action action)
         {
             Application.Current.Dispatcher?.Invoke(action);
         }
 
-        //TODO to remove
         private void OpenProgramDescriptionPanel(object sender, MouseButtonEventArgs e)
         {
             OpenProgramDescriptionPanel();
@@ -357,10 +393,8 @@ namespace SWP_TV_Projekt
         private void OpenProgramDescriptionPanel()
         {
             SetUI(() => { ProgramDescriptionPanel.Visibility = Visibility.Visible; });
-            // speechSynthesizer.Speak(ProgramDescription.Text);
         }
 
-        //TODO to remove
         private void CloseProgramDescriptionPanel(object sender, MouseButtonEventArgs e)
         {
             CloseProgramDescriptionPanel();
@@ -369,7 +403,6 @@ namespace SWP_TV_Projekt
         private void CloseProgramDescriptionPanel()
         {
             SetUI(() => { ProgramDescriptionPanel.Visibility = Visibility.Collapsed; });
-            // speechSynthesizer.Pause();
         }
     }
 }

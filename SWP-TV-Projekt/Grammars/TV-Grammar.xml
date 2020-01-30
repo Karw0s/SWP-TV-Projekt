@@ -47,64 +47,79 @@
 
     <rule id="channel">
         <one-of>
-            <item>
-                pierwszy
+            <item>do przodu
+                <tag>out="0";</tag>
+            </item>
+            <item>następny
+                <tag>out="0";</tag>
+            </item>
+            <item>dalej
+                <tag>out="0";</tag>
+            </item>
+            <item>do tyłu
+                <tag>out="-1";</tag>
+            </item>
+            <item>poprzedni
+                <tag>out="-1";</tag>
+            </item>
+            <item>wstecz
+                <tag>out="-1";</tag>
+            </item>
+            <item>pierwszy
                 <tag>out="1";</tag>
             </item>
-            <item>
-                jedynkę
+            <item>jedynkę
                 <tag>out="1";</tag>
             </item>
-            <item>
-                jeden
+            <item>jeden
                 <tag>out="1";</tag>
             </item>
-            <item>
-                drugi
+            <item>TVP 1
+                <tag>out="1";</tag>
+            </item>
+            <item>drugi
                 <tag>out="2";</tag>
             </item>
-            <item>
-                dwójkę
+            <item>dwójkę
                 <tag>out="2";</tag>
             </item>
-            <item>
-                dwa
+            <item>dwa
                 <tag>out="2";</tag>
             </item>
-            <item>
-                trzeci
+            <item>TVP 2
+                <tag>out="2";</tag>
+            </item>
+            <item>trzeci
                 <tag>out="3";</tag>
             </item>
-            <item>
-                trójkę
+            <item>trójkę
                 <tag>out="3";</tag>
             </item>
-            <item>
-                trzy
+            <item>trzy
                 <tag>out="3";</tag>
             </item>
-            <item>
-                czwarty
+            <item>TVN
+                <tag>out="3";</tag>
+            </item>
+            <item>czwarty
                 <tag>out="4";</tag>
             </item>
-            <item>
-                czwórkę
+            <item>czwórkę
                 <tag>out="4";</tag>
             </item>
-            <item>
-                cztery
+            <item>cztery
                 <tag>out="4";</tag>
             </item>
-            <item>
-                piąty
+            <item>POLSAT
+                <tag>out="4";</tag>
+            </item>
+            <item>piąty
                 <tag>out="5";</tag>
             </item>
-            <item>
-                piątkę
+            <item>piątkę
                 <tag>out="5";</tag>
             </item>
-            <item>
-                pięć
+            <item>pięć
                 <tag>out="5";</tag>
             </item>
         </one-of>
@@ -112,15 +127,9 @@
 
     <rule id="details">
         <one-of>
-            <item>
-                szczegóły
-            </item>
-            <item>
-                opis
-            </item>
-            <item>
-                telegazetę
-            </item>
+            <item>szczegóły</item>
+            <item>opis</item>
+            <item>telegazetę</item>
         </one-of>
     </rule>
 
