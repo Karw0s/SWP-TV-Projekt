@@ -8,6 +8,7 @@
             TvTurnsOff = "Wyłączam telewizor.",
             QuestionToChangingVolume = "Czy chcesz zmienić głośność?",
             QuestionToOpeningProgramDetails = "Czy chcesz sprawdzić szczegóły?",
-            EnterVolumeLevel = "Podaj poziom głośności.";
+            EnterVolumeLevel = "Podaj poziom głośności.",
+            ChannelNotFound = "Nie znaleziono programu {0}";
     }
 }

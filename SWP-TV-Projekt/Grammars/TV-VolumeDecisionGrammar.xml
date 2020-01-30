@@ -2,32 +2,32 @@
          xmlns="http://www.w3.org/2001/06/grammar" tag-format="semantics/1.0">
     <rule id="rootRule">
         <ruleref uri="#decision"/>
-        <tag>out.decision=rules.latest();</tag>
+        <tag>out=rules.latest();</tag>
     </rule>
 
     <rule id="decision">
         <one-of>
             <item>
-                <item>
+                <item repeat="0-1">
                     <ruleref uri="YesNoGrammar.xml#yes"/>
-                    <tag>out=1;</tag>
+                    <tag>out.decision=1;</tag>
                 </item>
                 <item repeat="0-1">
+                    <item repeat="0-1">Zmień</item>
                     <item repeat="0-1">
-                        <ruleref uri="TV-ChangeVolumeGrammar.xml#changeVolumeCommand"/>
+                        <one-of>
+                            <item>dźwięk</item>
+                            <item>głośność</item>
+                        </one-of>
                     </item>
-                    <one-of>
-                        <item>dźwięk</item>
-                        <item>głośność</item>
-                    </one-of>
-                    <item repeat="0-1">na</item>
+                    <item>na</item>
                     <ruleref uri="TV-VolumeLevelGrammar.xml#volume"/>
                     <tag>out.volume=rules.latest();</tag>
                 </item>
             </item>
             <item>
                 <ruleref uri="YesNoGrammar.xml#no"/>
-                <tag>out=0;</tag>
+                <tag>out.decision=0;</tag>
             </item>
         </one-of>
     </rule>
