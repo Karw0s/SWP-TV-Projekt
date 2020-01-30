@@ -27,6 +27,7 @@ namespace SWP_TV_Projekt
         private Grammar mainGrammar;
         private Grammar volumeGrammar;
         private Grammar yesNoGrammar;
+        private Grammar simpleChangeGrammar;
 
         public MainWindow()
         {
@@ -86,10 +87,14 @@ namespace SWP_TV_Projekt
             volumeGrammar = new Grammar(".\\Grammars\\TV-VolumeLevelGrammar.xml", "rootRule") {Enabled = false};
             Grammars.Add("volumeLevel", volumeGrammar);
 
+            simpleChangeGrammar = new Grammar(".\\Grammars\\SimpleProgVolChangeGrammar.xml", "rootRule") {Enabled = true};
+            Grammars.Add("simpleChange", simpleChangeGrammar);
+
             sre.LoadGrammar(mainGrammar);
             sre.LoadGrammar(yesNoGrammar);
             sre.LoadGrammar(changeVolumeGrammar);
             sre.LoadGrammar(volumeGrammar);
+            sre.LoadGrammar(simpleChangeGrammar);
             sre.RecognizeAsync(RecognizeMode.Multiple);
         }
 
@@ -105,11 +110,45 @@ namespace SWP_TV_Projekt
                     HandleChangeVolumeGrammar(e.Result);
                 else if (e.Result.Grammar.Equals(yesNoGrammar))
                     HandleYesNoGrammar(e.Result);
-                else if (e.Result.Grammar.Equals(volumeGrammar)) HandleVolumeGrammar(e.Result);
+                else if (e.Result.Grammar.Equals(volumeGrammar)) 
+                    HandleVolumeGrammar(e.Result);
+                else if (e.Result.Grammar.Equals(simpleChangeGrammar))
+                    HandleSimpleChangeGrammar(e.Result);
             }
             else
             {
                 speechSynthesizer.Speak(VoiceCommand.TryAgain);
+            }
+        }
+
+        private void HandleSimpleChangeGrammar(RecognitionResult eResult)
+        {
+            int program;
+            int volume;
+
+            using (var context = new SwpEntities())
+                volume = context.Settings.First().Volume;
+
+            using (var context = new SwpEntities())
+                program = context.Settings.First().TvChannelId;
+
+            if (eResult.Semantics.ContainsKey(SemanticKey.Volume))
+            {
+                int v = Convert.ToInt32(eResult.Semantics["volume"].Value);
+
+                if (v == 0)
+                    volume = 0;
+                else
+                    volume += v;
+
+                ChangeVolume(volume);
+            }
+            if (eResult.Semantics.ContainsKey("program"))
+            {
+                int p = Convert.ToInt32(eResult.Semantics["program"].Value);
+                program = program + p;
+
+                ChangeProgram(program);
             }
         }
 
@@ -187,12 +226,11 @@ namespace SWP_TV_Projekt
 
             Grammars["main"].Enabled = true;
             Grammars["changeVolume"].Enabled = true;
+            Grammars["simpleChange"].Enabled = true;
         }
 
         private void SetProgramVolume(int channelId, int volumeValue)
         {
-            // TODO remove when more programs added
-            if (channelId > 4) channelId %= 4;
 
             SetUI(() =>
             {
@@ -260,6 +298,11 @@ namespace SWP_TV_Projekt
 
         private void ChangeProgram(int channelId)
         {
+            // TODO remove when more programs added
+            if (channelId > 4) channelId %= 4;
+
+            if (channelId < 1) channelId = 4;
+
             using (var context = new SwpEntities())
             {
                 var currentChannel = context.TvChannels.Find(channelId);
@@ -274,6 +317,11 @@ namespace SWP_TV_Projekt
 
         private void ChangeVolume(int volumeValue)
         {
+            if (volumeValue > 10)
+                volumeValue = 10;
+            else if (volumeValue < 0)
+                volumeValue = 0;
+
             using (var context = new SwpEntities())
             {
                 context.Settings.First().Volume = volumeValue;
