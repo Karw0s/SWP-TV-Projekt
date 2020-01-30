@@ -9,6 +9,7 @@
         <item>dźwięk</item>
         <item>głośność</item>
       </one-of>
+      <item repeat="0-1"> na </item>
       <ruleref uri="TV-VolumeLevelGrammar.xml#volume"/>
       <tag>out.volume=rules.latest();</tag>
       <item repeat="0-1">poziom</item>
@@ -18,7 +19,7 @@
   <rule id="changeVolumeCommand" scope="public">
     <one-of>
       <item>Głośność</item>
-      <item>Zmień głośność</item>
+      <item>Zmień</item>
       <item>Podgłośnij</item>
       <item>Ścisz</item>
     </one-of>
