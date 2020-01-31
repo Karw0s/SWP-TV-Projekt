@@ -9,6 +9,7 @@
             QuestionToChangingVolume = "Czy chcesz zmienić głośność?",
             QuestionToOpeningProgramDetails = "Czy chcesz sprawdzić szczegóły?",
             EnterVolumeLevel = "Podaj poziom głośności.",
-            ChannelNotFound = "Nie znaleziono programu {0}";
+            ChannelNotFound = "Nie znaleziono programu {0}",
+            Ok = "Ok";
     }
 }

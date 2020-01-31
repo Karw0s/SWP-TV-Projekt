@@ -132,11 +132,6 @@ namespace SWP_TV_Projekt
                 volume = context.Settings.First().Volume;
             }
 
-            using (var context = new SwpEntities())
-            {
-                program = context.Settings.First().TvChannelId;
-            }
-
             if (eResult.Semantics.ContainsKey(SemanticKey.Volume))
             {
                 var v = Convert.ToInt32(eResult.Semantics["volume"].Value);
@@ -152,9 +147,7 @@ namespace SWP_TV_Projekt
             if (eResult.Semantics.ContainsKey("program"))
             {
                 var p = Convert.ToInt32(eResult.Semantics["program"].Value);
-                program = program + p;
-
-                ChangeProgram(program);
+                ChangeProgram(p);
             }
         }
 
@@ -185,6 +178,7 @@ namespace SWP_TV_Projekt
             else
             {
                 ResetActiveGrammars();
+                speechSynthesizer.Speak(VoiceCommand.Ok);
             }
         }
 
@@ -375,7 +369,11 @@ namespace SWP_TV_Projekt
             {
                 var channelCount = context.TvChannels.Count();
                 var currentChannel = context.Settings.First().TvChannel;
-                var nextChannel = position + currentChannel.Id % channelCount;
+                int nextChannel;
+                if (currentChannel.Id + position == 0)
+                    nextChannel = channelCount;
+                else
+                    nextChannel = (position + currentChannel.Id - 1) % channelCount + 1;
                 ChangeProgram(nextChannel);
             }
         }

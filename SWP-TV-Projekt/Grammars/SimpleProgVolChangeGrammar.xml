@@ -21,11 +21,11 @@
     <one-of>
       <item>
         <item>następny</item>
-        <tag> out="1";</tag>
+        <tag>out="0";</tag>
       </item>
       <item>
         <item>kolejny</item>
-        <tag> out="1";</tag>
+        <tag>out="0";</tag>
       </item>
       <item>
         <item>poprzedni</item>
